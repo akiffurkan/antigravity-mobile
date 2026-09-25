@@ -127,6 +127,7 @@ class AntigravityBridgeServer:
         self.connected_clients = set()
         self.server = None
         self.brain_dir = os.path.expanduser(os.path.join('~', '.gemini', 'antigravity', 'brain'))
+        self.workspace_dir = os.environ.get("WORKSPACE_DIR", os.getcwd())
         self.pending_approvals = {}
         self.approval_waiters = {}
         self.active_session_id = None
@@ -428,17 +429,56 @@ class AntigravityBridgeServer:
             elif action == "approval_decision":
                 appr_id = payload.get("approvalId")
                 decision = payload.get("decision", "rejected")
+                logging.info(f"Mobile approval decision for '{appr_id}': {decision.upper()}")
+
+                req_obj = None
                 if appr_id in self.pending_approvals:
-                    del self.pending_approvals[appr_id]
+                    req_obj = self.pending_approvals.pop(appr_id)
+
+                # 1. Resolve waiting agent hook if present
+                is_hook = False
                 if appr_id in self.approval_waiters:
+                    is_hook = True
                     fut = self.approval_waiters.pop(appr_id)
                     if not fut.done():
                         fut.set_result(decision)
+
+                # 2. Acknowledge back to sender immediately
                 await websocket.send(json.dumps({
                     "type": "response",
                     "requestId": req_id,
                     "result": {"status": "recorded", "decision": decision}
                 }))
+
+                # 3. Broadcast resolution to all connected phones
+                cmd_str = req_obj.get("command", "") if req_obj else ""
+                sess_id = req_obj.get("sessionId", self.active_session_id or "workspace") if req_obj else (self.active_session_id or "workspace")
+                await self.broadcast({
+                    "type": "approval_resolved",
+                    "payload": {
+                        "id": appr_id,
+                        "decision": decision,
+                        "status": "approved" if decision == "approved" else "rejected",
+                        "command": cmd_str,
+                        "sessionId": sess_id,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                })
+
+                # 4. If approved and NOT already executed by hook, execute on PC!
+                if decision == "approved" and not is_hook and cmd_str:
+                    asyncio.create_task(self._execute_approved_command(cmd_str, sess_id, appr_id))
+                elif decision == "rejected":
+                    await self.broadcast({
+                        "type": "chat_message",
+                        "payload": {
+                            "id": f"rej-{int(time.time())}",
+                            "sessionId": sess_id,
+                            "role": "system",
+                            "content": f"❌ Operator REJECTED execution of command:\n`{cmd_str}`",
+                            "timestamp": datetime.now().isoformat()
+                        }
+                    })
             elif action == "get_approvals":
                 pending = list(self.pending_approvals.values())
                 await websocket.send(json.dumps({
@@ -455,6 +495,64 @@ class AntigravityBridgeServer:
                     "type": "response",
                     "requestId": req_id,
                     "result": {"status": "dispatched", "approval": req}
+                }))
+            elif action == "agent_pre_tool_approval":
+                cmd = payload.get("command", "")
+                tool_name = payload.get("toolName", "run_command")
+                sess_id = payload.get("sessionId") or self.active_session_id or "workspace"
+                desc = payload.get("description", f"Antigravity Agent requesting: {cmd}")
+                risk = payload.get("risk") or calculate_risk(cmd)
+
+                appr_id = f"appr-agent-hook-{secrets.token_hex(4)}"
+                req = {
+                    "id": appr_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "sessionId": sess_id,
+                    "projectId": "antigravity-mobile",
+                    "projectName": "Antigravity Workspace",
+                    "command": cmd,
+                    "description": desc,
+                    "requestedAction": "Execute Terminal Command",
+                    "riskLevel": risk,
+                    "aiDecision": f"{risk}_RISK",
+                    "aiConfidence": 0.98,
+                    "aiReason": f"Pre-tool authorization requested by Antigravity Agent for {tool_name}.",
+                    "status": "pending",
+                    "source": "Antigravity Agent Hook",
+                    "expiresAt": (datetime.now() + timedelta(minutes=30)).isoformat(),
+                    "requiresBiometric": (risk in ("HIGH", "CRITICAL")),
+                    "nonce": secrets.token_hex(8)
+                }
+                self.pending_approvals[appr_id] = req
+                logging.info(f"Agent PreToolUse Hook registered approval: {appr_id} for '{cmd[:60]}'")
+
+                fut = asyncio.get_event_loop().create_future()
+                self.approval_waiters[appr_id] = fut
+
+                await self.broadcast({
+                    "type": "approval_request",
+                    "payload": req
+                })
+
+                decision = "ask"
+                if self.connected_clients:
+                    try:
+                        decision = await asyncio.wait_for(fut, timeout=10.0)
+                    except asyncio.TimeoutError:
+                        decision = "ask"
+                else:
+                    decision = "ask"
+
+                if appr_id in self.approval_waiters:
+                    del self.approval_waiters[appr_id]
+
+                await websocket.send(json.dumps({
+                    "type": "response",
+                    "requestId": req_id,
+                    "result": {
+                        "decision": decision,
+                        "approvalId": appr_id
+                    }
                 }))
 
     async def trigger_approval(self, command: str, risk: str = "MEDIUM", description: str = None):
@@ -484,6 +582,57 @@ class AntigravityBridgeServer:
             "payload": req
         })
         return req
+
+    async def _execute_approved_command(self, cmd: str, sess_id: str, appr_id: str):
+        logging.info(f"[+] Executing approved command on PC: {cmd}")
+        try:
+            await self.broadcast({
+                "type": "chat_message",
+                "payload": {
+                    "id": f"exec-start-{int(time.time())}",
+                    "sessionId": sess_id,
+                    "role": "system",
+                    "content": f"⚡ Running approved command on PC:\n`{cmd}`",
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
+
+            proc = await asyncio.create_subprocess_shell(
+                cmd,
+                cwd=self.workspace_dir,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            exit_code = proc.returncode
+
+            out_text = (stdout.decode('utf-8', errors='replace') + stderr.decode('utf-8', errors='replace')).strip()
+            snippet = out_text[:1200] if out_text else "(Command finished with no output)"
+            icon = "✅" if exit_code == 0 else "⚠️"
+
+            await self.broadcast({
+                "type": "chat_message",
+                "payload": {
+                    "id": f"exec-done-{int(time.time())}",
+                    "sessionId": sess_id,
+                    "role": "antigravity",
+                    "content": f"{icon} Command execution completed (Exit code: {exit_code}):\n```\n{snippet}\n```",
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
+            logging.info(f"[+] Command execution finished (Exit {exit_code}): {cmd}")
+        except Exception as e:
+            logging.error(f"Error executing approved command '{cmd}': {e}")
+            await self.broadcast({
+                "type": "chat_message",
+                "payload": {
+                    "id": f"exec-err-{int(time.time())}",
+                    "sessionId": sess_id,
+                    "role": "system",
+                    "content": f"❌ Execution error on PC: {e}",
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
 
     async def background_heartbeat_loop(self):
         while self.running:

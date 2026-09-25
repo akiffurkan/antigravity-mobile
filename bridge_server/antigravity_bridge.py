@@ -516,20 +516,55 @@ class AntigravityBridgeServer:
                 appr_id = payload.get("approvalId")
                 decision = payload.get("decision", "rejected")
                 logging.info(f"Mobile approval decision for '{appr_id}': {decision.upper()}")
-                if appr_id in self.pending_approvals:
-                    del self.pending_approvals[appr_id]
 
-                # Resolve any waiting hook future
+                req_obj = None
+                if appr_id in self.pending_approvals:
+                    req_obj = self.pending_approvals.pop(appr_id)
+
+                # 1. Resolve waiting agent hook if present
+                is_hook = False
                 if appr_id in self.approval_waiters:
+                    is_hook = True
                     fut = self.approval_waiters.pop(appr_id)
                     if not fut.done():
                         fut.set_result(decision)
 
+                # 2. Acknowledge back to sender immediately
                 await websocket.send(json.dumps({
                     "type": "response",
                     "requestId": req_id,
                     "result": {"status": "recorded", "decision": decision}
                 }))
+
+                # 3. Broadcast resolution to all connected phones
+                cmd_str = req_obj.get("command", "") if req_obj else ""
+                sess_id = req_obj.get("sessionId", self.active_session_id or "workspace") if req_obj else (self.active_session_id or "workspace")
+                await self.broadcast({
+                    "type": "approval_resolved",
+                    "payload": {
+                        "id": appr_id,
+                        "decision": decision,
+                        "status": "approved" if decision == "approved" else "rejected",
+                        "command": cmd_str,
+                        "sessionId": sess_id,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                })
+
+                # 4. If approved and NOT already executed by hook, execute on PC!
+                if decision == "approved" and not is_hook and cmd_str:
+                    asyncio.create_task(self._execute_approved_command(cmd_str, sess_id, appr_id))
+                elif decision == "rejected":
+                    await self.broadcast({
+                        "type": "chat_message",
+                        "payload": {
+                            "id": f"rej-{int(time.time())}",
+                            "sessionId": sess_id,
+                            "role": "system",
+                            "content": f"❌ Operator REJECTED execution of command:\n`{cmd_str}`",
+                            "timestamp": datetime.now().isoformat()
+                        }
+                    })
 
             elif action == "get_approvals":
                 pending = list(self.pending_approvals.values())
@@ -640,6 +675,57 @@ class AntigravityBridgeServer:
             "payload": req
         })
         return req
+
+    async def _execute_approved_command(self, cmd: str, sess_id: str, appr_id: str):
+        logging.info(f"[+] Executing approved command on PC: {cmd}")
+        try:
+            await self.broadcast({
+                "type": "chat_message",
+                "payload": {
+                    "id": f"exec-start-{int(time.time())}",
+                    "sessionId": sess_id,
+                    "role": "system",
+                    "content": f"⚡ Running approved command on PC:\n`{cmd}`",
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
+
+            proc = await asyncio.create_subprocess_shell(
+                cmd,
+                cwd=self.workspace_dir,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            exit_code = proc.returncode
+
+            out_text = (stdout.decode('utf-8', errors='replace') + stderr.decode('utf-8', errors='replace')).strip()
+            snippet = out_text[:1200] if out_text else "(Command finished with no output)"
+            icon = "✅" if exit_code == 0 else "⚠️"
+
+            await self.broadcast({
+                "type": "chat_message",
+                "payload": {
+                    "id": f"exec-done-{int(time.time())}",
+                    "sessionId": sess_id,
+                    "role": "antigravity",
+                    "content": f"{icon} Command execution completed (Exit code: {exit_code}):\n```\n{snippet}\n```",
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
+            logging.info(f"[+] Command execution finished (Exit {exit_code}): {cmd}")
+        except Exception as e:
+            logging.error(f"Error executing approved command '{cmd}': {e}")
+            await self.broadcast({
+                "type": "chat_message",
+                "payload": {
+                    "id": f"exec-err-{int(time.time())}",
+                    "sessionId": sess_id,
+                    "role": "system",
+                    "content": f"❌ Execution error on PC: {e}",
+                    "timestamp": datetime.now().isoformat()
+                }
+            })
 
     async def background_heartbeat_loop(self):
         """Periodically refreshes info file, broadcasts heartbeat, and monitors Antigravity."""

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import '../../models/approval_request.dart';
+import '../../models/risk_level.dart';
 import '../../models/chat_message.dart';
 import '../../models/connection_state.dart';
 import '../../models/device_info.dart';
@@ -89,6 +90,36 @@ class TransportAntigravityBridge implements AntigravityBridge {
             data['payload'] as Map<String, dynamic>,
           );
           _approvalController.add(approval);
+          break;
+
+        case 'approval_resolved':
+          if (data['payload'] is Map<String, dynamic>) {
+            final p = data['payload'] as Map<String, dynamic>;
+            final apprId = p['id'] as String?;
+            final statusStr = p['status'] as String? ?? p['decision'] as String?;
+            final status = statusStr == 'approved'
+                ? ApprovalStatus.approved
+                : ApprovalStatus.rejected;
+            if (apprId != null) {
+              _approvalController.add(
+                ApprovalRequest(
+                  id: apprId,
+                  timestamp: DateTime.now(),
+                  sessionId: p['sessionId'] as String? ?? '',
+                  projectId: p['projectId'] as String? ?? '',
+                  projectName: p['projectName'] as String? ?? 'Antigravity Workspace',
+                  command: p['command'] as String? ?? '',
+                  description: p['description'] as String? ?? '',
+                  requestedAction: p['requestedAction'] as String? ?? 'Execute Command',
+                  riskLevel: RiskLevel.medium,
+                  status: status,
+                  source: 'PC Bridge',
+                  expiresAt: DateTime.now().add(const Duration(hours: 1)),
+                  nonce: '',
+                ),
+              );
+            }
+          }
           break;
 
         case 'chat_message':

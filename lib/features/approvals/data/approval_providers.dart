@@ -123,14 +123,16 @@ class ApprovalsNotifier extends StateNotifier<List<ApprovalRequest>> {
   }) async {
     try {
       final bridge = _ref.read(bridgeProvider);
-      await bridge.approve(id);
 
+      // Optimistically mark approved immediately so UI reflects without waiting
       state = state.map((a) {
         if (a.id == id) {
           return a.copyWith(status: ApprovalStatus.approved);
         }
         return a;
       }).toList();
+
+      await bridge.approve(id);
 
       _recordAudit(
         id,
@@ -147,14 +149,16 @@ class ApprovalsNotifier extends StateNotifier<List<ApprovalRequest>> {
   Future<bool> reject(String id, {String? reason}) async {
     try {
       final bridge = _ref.read(bridgeProvider);
-      await bridge.reject(id);
 
+      // Optimistically mark rejected immediately so UI reflects without waiting
       state = state.map((a) {
         if (a.id == id) {
           return a.copyWith(status: ApprovalStatus.rejected);
         }
         return a;
       }).toList();
+
+      await bridge.reject(id);
 
       _recordAudit(
         id,

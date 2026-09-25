@@ -12,7 +12,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows-brightgreen?logo=android&logoColor=white)](#downloads--verified-releases)
 [![Security Status](https://img.shields.io/badge/Security-VirusTotal%20Clean%20(0%2F72)-success?logo=virustotal&logoColor=white)](#-security--integrity-verification)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.0.0-orange?logo=github)](https://github.com/akiffurkan/antigravity-mobile/releases)
+[![Release](https://img.shields.io/badge/Release-v1.0.1-orange?logo=github)](https://github.com/akiffurkan/antigravity-mobile/releases)
 
 <p align="center">
   <a href="#-overview">Overview</a> •
@@ -104,14 +104,14 @@ flowchart TB
 
 Each official release bundle provides a signed installer for Windows and an optimized APK for Android.
 
-### 🏷️ Release v1.0.0 Assets
+### 🏷️ Release v1.0.1 Assets
 
 | Asset Name | Target Platform | Size | Description |
 | :--- | :--- | :--- | :--- |
-| **[`antigravity-mobile-v1.0.0-windows-android.zip`](https://github.com/akiffurkan/antigravity-mobile/releases/download/v1.0.0/antigravity-mobile-v1.0.0-windows-android.zip)** | Windows & Android | ~35.2 MB | **Complete Release Bundle** (Includes `bridge-server-install.exe`, `antigravity-mobile.apk`, and Readme) |
-| **[`antigravity-mobile-v1.0.0-source.zip`](https://github.com/akiffurkan/antigravity-mobile/releases/download/v1.0.0/antigravity-mobile-v1.0.0-source.zip)** | Source Code | 2.37 MB | Clean, reproducible source code archive |
+| **[`antigravity-mobile-v1.0.1-windows-android.zip`](https://github.com/akiffurkan/antigravity-mobile/releases/download/v1.0.1/antigravity-mobile-v1.0.1-windows-android.zip)** | Windows & Android | ~32.9 MB | **Complete Release Bundle** (Includes `bridge-server-install.exe`, `antigravity-mobile.apk`, and Readme) |
+| **[`antigravity-mobile-v1.0.1-source.zip`](https://github.com/akiffurkan/antigravity-mobile/releases/download/v1.0.1/antigravity-mobile-v1.0.1-source.zip)** | Source Code | 2.86 MB | Clean, reproducible source code archive |
 
-> 💡 **Notice:** All installation binaries are packaged together in `antigravity-mobile-v1.0.0-windows-android.zip`. Extra individual binaries are not listed separately to keep the releases clean and unified.
+> 💡 **Notice:** All installation binaries are packaged together in `antigravity-mobile-v1.0.1-windows-android.zip`. Extra individual binaries are not listed separately to keep the releases clean and unified.
 
 ---
 
@@ -125,10 +125,10 @@ To protect against man-in-the-middle attacks, unauthorized tampering, and file c
 ====================================================================================================
 FILE NAME                                      SHA-256 CHECKSUM
 ====================================================================================================
-bridge-server-install.exe                      99752BDEA43507AC7E075EB3D8D7605AEC6226F7304EC56EE78A283A56FC2878
-antigravity-mobile.apk                         78FF78C3387F14FB3D7A81E538786076DAE08EFC70DDA1888E842540AAC1E8A4
-antigravity-mobile-v1.0.0-windows-android.zip  8D138F64DF10DE133B161E00AA33752E710C582ABBBF765989A19DAE30C07720
-antigravity-mobile-v1.0.0-source.zip           CA15CCE3BB2D304DFAE0F9F15186160EC06CC2882A4C43270D30F09F6508BABD
+bridge-server-install.exe                      14CE88D0E347128A04B85090A88C3985E34D0D355C6C440AD7BEA011833D8EE4
+antigravity-mobile.apk                         E79ADA98221AED7AABEF2887C448DBB594BBA3817C0960452B5C3551E9A14B78
+antigravity-mobile-v1.0.1-windows-android.zip  0B5F47346AB775ACAC1ECA37CAEE710062B3B7B4DC60AB65591783C684330C54
+antigravity-mobile-v1.0.1-source.zip           745195F387F8502C96EC100FC66E7C89BE3F3255AF2BA61FA4CEBCB1C51F70A6
 ====================================================================================================
 ```
 
@@ -138,7 +138,7 @@ antigravity-mobile-v1.0.0-source.zip           CA15CCE3BB2D304DFAE0F9F15186160EC
 ```powershell
 Get-FileHash -Algorithm SHA256 bridge-server-install.exe
 Get-FileHash -Algorithm SHA256 antigravity-mobile.apk
-Get-FileHash -Algorithm SHA256 antigravity-mobile-v1.0.0-windows-android.zip
+Get-FileHash -Algorithm SHA256 antigravity-mobile-v1.0.1-windows-android.zip
 ```
 
 #### Linux (Bash):
