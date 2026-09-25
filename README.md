@@ -12,7 +12,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows-brightgreen?logo=android&logoColor=white)](#downloads--verified-releases)
 [![Security Status](https://img.shields.io/badge/Security-VirusTotal%20Clean%20(0%2F72)-success?logo=virustotal&logoColor=white)](#-security--integrity-verification)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.0.0-orange?logo=github)](https://github.com/KorkmazPro28/antigravity-mobile/releases)
+[![Release](https://img.shields.io/badge/Release-v1.0.0-orange?logo=github)](https://github.com/akiffurkan/antigravity-mobile/releases)
 
 <p align="center">
   <a href="#-overview">Overview</a> •
@@ -174,7 +174,7 @@ shasum -a 256 antigravity-mobile.apk
 
 #### Method B: Run from Source
 ```bash
-git clone https://github.com/KorkmazPro28/antigravity-mobile.git
+git clone https://github.com/akiffurkan/antigravity-mobile.git
 cd antigravity-mobile
 pip install websockets psutil
 python bridge_server/antigravity_bridge.py
@@ -224,7 +224,7 @@ python bridge_server/test_client.py
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/KorkmazPro28/antigravity-mobile.git
+git clone https://github.com/akiffurkan/antigravity-mobile.git
 cd antigravity-mobile
 
 # 2. Install dependencies

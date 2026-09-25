@@ -7,7 +7,7 @@
 .PARAMETER Token
     GitHub Personal Access Token (classic with repo scope or fine-grained with Contents write).
 .PARAMETER Repo
-    GitHub repository in 'owner/repo' format (default: KorkmazPro28/antigravity-mobile).
+    GitHub repository in 'owner/repo' format (default: akiffurkan/antigravity-mobile).
 .PARAMETER Tag
     Git tag for the release (default: v1.0.0).
 #>
@@ -18,7 +18,7 @@ param (
     [string]$Token,
 
     [Parameter(Mandatory = $false)]
-    [string]$Repo = "KorkmazPro28/antigravity-mobile",
+    [string]$Repo = "akiffurkan/antigravity-mobile",
 
     [Parameter(Mandatory = $false)]
     [string]$Tag = "v1.0.0"
