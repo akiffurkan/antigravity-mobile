@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Antigravity Mobile Banner](assets/images/logo.png)
+<img src="assets/images/logo.png" alt="Antigravity Mobile Logo" width="140" />
 
 ### The Production-Grade Mobile Companion & Biometric Approval Gateway for Google Antigravity on PC
 
