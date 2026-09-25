@@ -108,10 +108,10 @@ Each official release bundle provides a signed installer for Windows and an opti
 
 | Asset Name | Target Platform | Size | Description |
 | :--- | :--- | :--- | :--- |
-| **[`antigravity-mobile-v1.0.0-windows-android.zip`](releases/v1.0.0/antigravity-mobile-v1.0.0-windows-android.zip)** | Windows & Android | ~35.2 MB | **Complete Release Bundle** (Includes Installer EXE, APK, and Readme) |
-| **[`bridge-server-install.exe`](releases/v1.0.0/package/bridge-server-install.exe)** | Windows 10 / 11 (x64) | 9.24 MB | Standalone PC Bridge Server & Service Installer (No Python required) |
-| **[`antigravity-mobile.apk`](releases/v1.0.0/package/antigravity-mobile.apk)** | Android 8.0+ (ARM64/x86_64) | 56.3 MB | Companion Android Client APK |
-| **[`antigravity-mobile-v1.0.0-source.zip`](releases/v1.0.0/antigravity-mobile-v1.0.0-source.zip)** | Source Code | 485 KB | Clean, reproducible source code archive |
+| **[`antigravity-mobile-v1.0.0-windows-android.zip`](https://github.com/akiffurkan/antigravity-mobile/releases/download/v1.0.0/antigravity-mobile-v1.0.0-windows-android.zip)** | Windows & Android | ~35.2 MB | **Complete Release Bundle** (Includes `bridge-server-install.exe`, `antigravity-mobile.apk`, and Readme) |
+| **[`antigravity-mobile-v1.0.0-source.zip`](https://github.com/akiffurkan/antigravity-mobile/releases/download/v1.0.0/antigravity-mobile-v1.0.0-source.zip)** | Source Code | 2.37 MB | Clean, reproducible source code archive |
+
+> 💡 **Notice:** All installation binaries are packaged together in `antigravity-mobile-v1.0.0-windows-android.zip`. Extra individual binaries are not listed separately to keep the releases clean and unified.
 
 ---
 
